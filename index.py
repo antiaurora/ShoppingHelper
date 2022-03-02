@@ -17,12 +17,30 @@ logging.basicConfig(filename='./log/'+log_data+'.log', level=logging.INFO, forma
 #           模块名，flask以这个模块所在的目录为总目录，默认这个目录中的static为静态目录，templates为模板目录
 app = Flask(__name__)
 
+def msg_log(db_words1,db_words2,sb,nonce,timestamp):
+    #设置回复内容
+    body_data = '''<xml>
+    <MsgType><![CDATA[text]]></MsgType>
+    <Content><![CDATA['''+db_words1+''']]></Content>
+    </xml>'''            
+    #加个log
+    logging.info(db_words2)
+    #加密返回
+    ret,sMsg=sb.EncryptMsg(body_data,nonce,timestamp)
+    if( ret!=0 ):
+        print("故障码:",ret)
+        return("故障码",ret)
+    return sMsg
+
+
+
 # 通过method限定访问方式
 @app.route("/", methods=["GET","POST"])
 def function():
-    sToken = "xxxxxxxxxxxxxxxxxxx"
-    sEncodingAESKey = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    sCorpID = "wwxxxxxxxxxxxxxxxx"
+    sToken = "nathabUgcghvVZy6ykh"
+    sEncodingAESKey = "zPsBfoqrnzDsLNjl3u3BrX4n7DAzhJStVNhcmLKf4a2"
+    #sCorpID = "ww551a20da5ed98364"
+    sCorpID = "ww26d67899bdda4356"
     
     #接收信息区
     msg_signature=request.args.get("msg_signature")
@@ -65,6 +83,12 @@ def function():
         staff_table=db_s.sql_staff(rx_msg_staff[0])
         staff_real_name=staff_table[1]
         db_s.close
+
+
+        #维护中，
+        # return msg_log("正在维护中，请稍后","用户"+staff_real_name+"在维护中进入",sb,nonce,timestamp)
+
+
         #用户进入匹配
         rx_msg_agent=re.findall("<!\[CDATA\[enter_agent\]\]>",sMsg.decode("utf-8"))
         if rx_msg_agent!=[]:
@@ -75,23 +99,12 @@ def function():
                 db_words="还不认识你呢，请找管理员添加一下哦"
             else:
                 staff_real_name=staff_table[1]
-                db_words="哈喽，可以随时叫我名字哦"
+                db_words="哈喽，可以随时叫我名字哦~"
             db_s.close()
             
-            #设置回复内容
-            body_data = '''<xml>
-            <MsgType><![CDATA[text]]></MsgType>
-            <Content><![CDATA['''+db_words+''']]></Content>
-            </xml>'''            
-            #加个log
-            logging.info("用户："+staff_real_name+"进入会话")
-            #加密返回
-            ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-            if( ret!=0 ):
-                print("故障码:",ret)
-                return("故障码",ret)
-            return sMsg
-
+            #返回企业微信及添加日志
+            db_words2="用户："+staff_real_name+"进入会话"
+            return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
         #文字内容匹配
         #<Content><![CDATA[ABCDEFGHIJKLMN]]>
@@ -116,19 +129,11 @@ def function():
         for i in hack:
             if i in str(rx_msg[0]):
                 print("注入检验命中")
-                db_words="不要试图让我系统错乱哦~"
-                body_data = '''<xml>
-                <MsgType><![CDATA[text]]></MsgType>
-                <Content><![CDATA['''+db_words+''']]></Content>
-                </xml>'''
-                #加个log
-                logging.info("用户"+staff_real_name+"："+rx_msg[0])
-                logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")
-                ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-                if( ret!=0 ):
-                    print("故障码:",ret)
-                    return("故障码",ret)
-                return sMsg
+
+                #返回企业微信及添加日志
+                db_words="不要试图让系统错乱哦~"
+                db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+                return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
 
         #帮助
@@ -145,20 +150,9 @@ def function():
 
             db_s.close()
             
-            #设置回复内容
-            body_data = '''<xml>
-            <MsgType><![CDATA[text]]></MsgType>
-            <Content><![CDATA['''+db_words+''']]></Content>
-            </xml>'''      
-            #加个log
-            logging.info("用户"+staff_real_name+"："+rx_msg[0])
-            logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")      
-            #加密返回
-            ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-            if( ret!=0 ):
-                print("故障码:",ret)
-                return("故障码",ret)
-            return sMsg
+            #返回企业微信及添加日志
+            db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+            return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
 
         #我的积分
@@ -169,23 +163,12 @@ def function():
             if staff_table==None:
                 db_words="还不认识你呢，请找管理员添加一下哦"
             else:
-                db_words=""+staff_table[1]+"您好，您有"+str(staff_table[3])+"点x分。抓紧上车兑换礼品!"
+                db_words=""+staff_table[1]+"您好，您有"+str(staff_table[3])+"点分。抓紧上车兑换礼品分。抓紧上车兑换礼品!"
             db_s.close()
             
-            #设置回复内容
-            body_data = '''<xml>
-            <MsgType><![CDATA[text]]></MsgType>
-            <Content><![CDATA['''+db_words+''']]></Content>
-            </xml>'''  
-            #加个log
-            logging.info("用户"+staff_real_name+"："+rx_msg[0])
-            logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")          
-            #加密返回
-            ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-            if( ret!=0 ):
-                print("故障码:",ret)
-                return("故障码",ret)
-            return sMsg
+            #返回企业微信及添加日志
+            db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+            return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
 
         #我的商城
@@ -204,20 +187,9 @@ def function():
             
             db_words = db_words + "\r\n\r\n选好了吗？回复商品编号哦，例如:兑换商品2"
             
-            #设置回复内容
-            body_data = '''<xml>
-            <MsgType><![CDATA[text]]></MsgType>
-            <Content><![CDATA['''+db_words+''']]></Content>
-            </xml>''' 
-            #加个log
-            logging.info("用户"+staff_real_name+"："+rx_msg[0])
-            logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")           
-            #加密返回
-            ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-            if( ret!=0 ):
-                print("故障码:",ret)
-                return("故障码",ret)
-            return sMsg
+            #返回企业微信及添加日志
+            db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+            return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
 
         #我的订单
@@ -226,7 +198,7 @@ def function():
             db_s=sql.sql_real()
             order_table=db_s.all_order(rx_msg_staff[0])
             if order_table==():
-                db_words="您还没有历史订单哦~抓紧兑换礼品!"
+                db_words="您还没有历史订单哦~抓紧上车兑换礼品!"
             else:
                 db_words="您的历史订单如下:"
                 try:
@@ -236,20 +208,9 @@ def function():
                     print("退出订单循环")
             db_s.close()
             
-            #设置回复内容
-            body_data = '''<xml>
-            <MsgType><![CDATA[text]]></MsgType>
-            <Content><![CDATA['''+db_words+''']]></Content>
-            </xml>'''            
-            #加个log
-            logging.info("用户"+staff_real_name+"："+rx_msg[0])
-            logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")   
-            #加密返回
-            ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-            if( ret!=0 ):
-                print("故障码:",ret)
-                return("故障码",ret)
-            return sMsg
+            #返回企业微信及添加日志
+            db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+            return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
 
         #查询某订单
@@ -262,77 +223,33 @@ def function():
                 order_id=(int)(order_num)
             except:
                 db_words="请输入正确的订单号哦~"
-                #设置回复内容
-                body_data = '''<xml>
-                <MsgType><![CDATA[text]]></MsgType>
-                <Content><![CDATA['''+db_words+''']]></Content>
-                </xml>'''            
-                #加个log
-                logging.info("用户"+staff_real_name+"："+rx_msg[0])
-                logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")   
-                #加密返回
-                ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-                if( ret!=0 ):
-                    print("故障码:",ret)
-                    return("故障码",ret)
-                return sMsg
+                #返回企业微信及添加日志
+                db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+                return msg_log(db_words,db_words2,sb,nonce,timestamp)
             
             db_s=sql.sql_real()
             order_msg=db_s.one_order(order_id)
             print(order_msg)
             if order_msg==None:
                 db_words="很抱歉，订单不存在哦~"
-                #设置回复内容
-                body_data = '''<xml>
-                <MsgType><![CDATA[text]]></MsgType>
-                <Content><![CDATA['''+db_words+''']]></Content>
-                </xml>'''       
-                #加个log
-                logging.info("用户"+staff_real_name+"："+rx_msg[0])
-                logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")        
-                #加密返回
-                ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-                if( ret!=0 ):
-                    print("故障码:",ret)
-                    return("故障码",ret)
-                return sMsg
+                #返回企业微信及添加日志
+                db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+                return msg_log(db_words,db_words2,sb,nonce,timestamp)
             else:
                 staff_msg=db_s.sql_staff(rx_msg_staff[0])
                 staff_name=staff_msg[1]
                 if order_msg[1]!=staff_name:
                     db_words="对不起，您没有权限查看他人订单哦~"
-                    #设置回复内容
-                    body_data = '''<xml>
-                    <MsgType><![CDATA[text]]></MsgType>
-                    <Content><![CDATA['''+db_words+''']]></Content>
-                    </xml>''' 
-                    #加个log
-                    logging.info("用户"+staff_real_name+"："+rx_msg[0])
-                    logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")              
-                    #加密返回
-                    ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-                    if( ret!=0 ):
-                        print("故障码:",ret)
-                        return("故障码",ret)
-                    return sMsg
+                    #返回企业微信及添加日志
+                    db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+                    return msg_log(db_words,db_words2,sb,nonce,timestamp)
                 
 
             #查找订单成功
             db_words="【订单编号】"+str(order_msg[0])+"\r\n【兑换用户】"+order_msg[1]+"\r\n【商品名称】"+order_msg[2]+"\r\n【订单状态】"+order_msg[4]+"\r\n【订单时间】"+order_msg[5]
-            #设置回复内容
-            body_data = '''<xml>
-            <MsgType><![CDATA[text]]></MsgType>
-            <Content><![CDATA['''+db_words+''']]></Content>
-            </xml>'''     
-            #加个log
-            logging.info("用户"+staff_real_name+"："+rx_msg[0])
-            logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")          
-            #加密返回
-            ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-            if( ret!=0 ):
-                print("故障码:",ret)
-                return("故障码",ret)
-            return sMsg
+            #返回企业微信及添加日志
+            db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+            return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
 
         #签到
@@ -342,20 +259,9 @@ def function():
 
             db_words=db_s.check_in(rx_msg_staff[0])
 
-            #设置回复内容
-            body_data = '''<xml>
-            <MsgType><![CDATA[text]]></MsgType>
-            <Content><![CDATA['''+db_words+''']]></Content>
-            </xml>'''  
-            #加个log
-            logging.info("用户"+staff_real_name+"："+rx_msg[0])
-            logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")             
-            #加密返回
-            ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-            if( ret!=0 ):
-                print("故障码:",ret)
-                return("故障码",ret)
-            return sMsg
+            #返回企业微信及添加日志
+            db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+            return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
         
         #我的签到记录
@@ -374,20 +280,9 @@ def function():
                     print("退出签到表循环")
             db_s.close()
             
-            #设置回复内容
-            body_data = '''<xml>
-            <MsgType><![CDATA[text]]></MsgType>
-            <Content><![CDATA['''+db_words+''']]></Content>
-            </xml>'''  
-            #加个log
-            logging.info("用户"+staff_real_name+"："+rx_msg[0])
-            logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")             
-            #加密返回
-            ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-            if( ret!=0 ):
-                print("故障码:",ret)
-                return("故障码",ret)
-            return sMsg
+            #返回企业微信及添加日志
+            db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+            return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
 
         #建立订单
@@ -400,20 +295,9 @@ def function():
                 commodity_id=(int)(commodity_num)
             except:
                 db_words="请输入正确的商品编号哦~"
-                #设置回复内容
-                body_data = '''<xml>
-                <MsgType><![CDATA[text]]></MsgType>
-                <Content><![CDATA['''+db_words+''']]></Content>
-                </xml>'''
-                #加个log
-                logging.info("用户"+staff_real_name+"："+rx_msg[0])
-                logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")               
-                #加密返回
-                ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-                if( ret!=0 ):
-                    print("故障码:",ret)
-                    return("故障码",ret)
-                return sMsg
+                #返回企业微信及添加日志
+                db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+                return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
             db_s=sql.sql_real()
             staff_msg=db_s.sql_staff(rx_msg_staff[0])
@@ -422,20 +306,9 @@ def function():
             #查找商品失败
             if commodity_msg == None:
                 db_words="很抱歉，商品已售罄或商品不存在~"
-                #设置回复内容
-                body_data = '''<xml>
-                <MsgType><![CDATA[text]]></MsgType>
-                <Content><![CDATA['''+db_words+''']]></Content>
-                </xml>''' 
-                #加个log
-                logging.info("用户"+staff_real_name+"："+rx_msg[0])
-                logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")              
-                #加密返回
-                ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-                if( ret!=0 ):
-                    print("故障码:",ret)
-                    return("故障码",ret)
-                return sMsg
+                #返回企业微信及添加日志
+                db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+                return msg_log(db_words,db_words2,sb,nonce,timestamp)
             #商品存在，拿数据
             staff_name=staff_msg[1]
             commodity_point=commodity_msg[3]
@@ -443,21 +316,10 @@ def function():
             commodity_name=commodity_msg[1]
             #积分不足失败
             if staff_point < commodity_point :
-                db_words="哎呀，x分不足，无法兑换~"
-                #设置回复内容
-                body_data = '''<xml>
-                <MsgType><![CDATA[text]]></MsgType>
-                <Content><![CDATA['''+db_words+''']]></Content>
-                </xml>'''    
-                #加个log
-                logging.info("用户"+staff_real_name+"："+rx_msg[0])
-                logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")           
-                #加密返回
-                ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-                if( ret!=0 ):
-                    print("故障码:",ret)
-                    return("故障码",ret)
-                return sMsg
+                db_words="哎呀，分不足，无法兑换~"
+                #返回企业微信及添加日志
+                db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+                return msg_log(db_words,db_words2,sb,nonce,timestamp)
             #正常购买
             staff_point -= commodity_point
             commodity_rest -= 1
@@ -467,24 +329,12 @@ def function():
             order_msg=db_s.creat_order(staff_name,commodity_name)
             order_id=order_msg[0]
             order_commodity=order_msg[2]
-            db_words="您已成功兑换商品\r\n【"+str(order_commodity)+"】\r\n订单号【"+str(order_id)+"】\r\n已推送给xxxx，还待确认中......."
+            db_words="您已成功兑换商品\r\n【"+str(order_commodity)+"】\r\n订单号【"+str(order_id)+"】\r\n已推送给库，还待确认中......."
             mail.send("创建订单","您有新的订单啦："+str(order_id)+"\r\n用户："+staff_name+"\r\n商品："+commodity_name)
 
-            #设置回复内容
-            body_data = '''<xml>
-            <MsgType><![CDATA[text]]></MsgType>
-            <Content><![CDATA['''+db_words+''']]></Content>
-            </xml>'''       
-            #加个log
-            logging.info("用户"+staff_real_name+"："+rx_msg[0])
-            logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")        
-            #加密返回
-            ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-            if( ret!=0 ):
-                print("故障码:",ret)
-                return("故障码",ret)
-            return sMsg
-
+            #返回企业微信及添加日志
+            db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+            return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
 
         #撤销订单
@@ -496,20 +346,9 @@ def function():
                 order_id=(int)(id)
             except:
                 db_words="请输入正确的订单编号哦~"
-                #设置回复内容
-                body_data = '''<xml>
-                <MsgType><![CDATA[text]]></MsgType>
-                <Content><![CDATA['''+db_words+''']]></Content>
-                </xml>'''            
-                #加个log
-                logging.info("用户"+staff_real_name+"："+rx_msg[0])
-                logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")   
-                #加密返回
-                ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-                if( ret!=0 ):
-                    print("故障码:",ret)
-                    return("故障码",ret)
-                return sMsg
+                #返回企业微信及添加日志
+                db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+                return msg_log(db_words,db_words2,sb,nonce,timestamp)
             
             db_words=""
 
@@ -520,20 +359,9 @@ def function():
             #若用户无订单
             if order_table==None:
                 db_words="您还没有订单可撤销哦~抓紧上车兑换礼品！"
-                #设置回复内容
-                body_data = '''<xml>
-                <MsgType><![CDATA[text]]></MsgType>
-                <Content><![CDATA['''+db_words+''']]></Content>
-                </xml>'''        
-                #加个log
-                logging.info("用户"+staff_real_name+"："+rx_msg[0])
-                logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")       
-                #加密返回
-                ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-                if( ret!=0 ):
-                    print("故障码:",ret)
-                    return("故障码",ret)
-                return sMsg
+                #返回企业微信及添加日志
+                db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+                return msg_log(db_words,db_words2,sb,nonce,timestamp)
             else:
                 try:
                     for i in range(0,1000):
@@ -552,7 +380,7 @@ def function():
                                         staff_name=order_table[i][1]
                                         commodity_name=order_table[i][2]
                                         mail.send("撤销订单","订单被取消："+str(order_id)+"\r\n用户："+staff_name+"\r\n商品："+commodity_name)
-                                        db_words="【订单"+str(order_id)+"】"+commodity_name+"\r\n撤销成功!已将信息推送给xxx咯~"
+                                        db_words="【订单"+str(order_id)+"】"+commodity_name+"\r\n撤销成功!已将信息推送给佳贝库咯~"
                                     
                                 else:
                                     if order_table[i][4] == "已撤销":
@@ -562,46 +390,22 @@ def function():
                             break                         
                 except:
                     #在自己的订单列表中未找到想要撤销的订单
-                    db_words="您不能撤销该订单呀~是不是写错订单号了呢？"
-
-                          
+                    db_words="您不能撤销该订单呀~是不是写错订单号了呢？"                        
             db_s.close()
-            #设置回复内容
-            body_data = '''<xml>
-            <MsgType><![CDATA[text]]></MsgType>
-            <Content><![CDATA['''+db_words+''']]></Content>
-            </xml>'''       
-            #加个log
-            logging.info("用户"+staff_real_name+"："+rx_msg[0])
-            logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")        
-            #加密返回
-            ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-            if( ret!=0 ):
-                print("故障码:",ret)
-                return("故障码",ret)
-            return sMsg
+            #返回企业微信及添加日志
+            db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+            return msg_log(db_words,db_words2,sb,nonce,timestamp)
 
 
         #全都没匹配到
         db_s=sql.sql_real()
         db_words=db_s.no_match()
-
-        body_data = '''<xml>
-       <MsgType><![CDATA[text]]></MsgType>
-        <Content><![CDATA['''+db_words+''']]></Content>
-       </xml>'''
-        #加个log
-        logging.info("用户"+staff_real_name+"："+rx_msg[0])
-        logging.info("回复：\r\n"+db_words[0:40]+"\r\n下略")   
-        
-        ret,sMsg=sb.EncryptMsg(body_data, nonce,timestamp)
-        if( ret!=0 ):
-            print("故障码:",ret)
-            return("故障码",ret)
         db_s.close()
-        return sMsg
-    
-    
+        #返回企业微信及添加日志
+        db_words2="用户"+staff_real_name+"："+rx_msg[0]+"\r\n"+"回复：\r\n"+db_words[0:40]+"\r\n下略"
+        return msg_log(db_words,db_words2,sb,nonce,timestamp)
+
+
 
 if __name__ == '__main__':
     # 通过url_map可以查看整个flask中的路由信息
@@ -609,4 +413,3 @@ if __name__ == '__main__':
     # 启动flask程序
     # app.run(debug=True)
     app.run(host="0.0.0.0", port=8889,debug=False)
-
